@@ -16,7 +16,7 @@ import (
 type UserService interface {
 	Create(ctx context.Context, email string) (domain.User, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.User, error)
-	Delete(ctx context.Context, id uuid.UUID) (domain.User, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // GetUser gets a user.
@@ -158,7 +158,7 @@ func DeleteUser(logger *slog.Logger, svc UserService, idKey string) gin.HandlerF
 			return
 		}
 
-		user, err := svc.Delete(c, userID)
+		err = svc.Delete(c, userID)
 		if err != nil {
 			logger.
 				ErrorContext(
@@ -175,9 +175,6 @@ func DeleteUser(logger *slog.Logger, svc UserService, idKey string) gin.HandlerF
 			return
 		}
 
-		c.JSON(http.StatusOK, response.User{
-			ID:    user.ID.String(),
-			Email: user.Email,
-		})
+		c.Status(http.StatusOK)
 	}
 }

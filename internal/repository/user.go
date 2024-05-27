@@ -47,15 +47,15 @@ func (u *User) FindOne(_ context.Context, id uuid.UUID) (domain.User, error) {
 	return user, nil
 }
 
-func (u *User) DeleteOne(_ context.Context, id uuid.UUID) (domain.User, error) {
+func (u *User) DeleteOne(_ context.Context, id uuid.UUID) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
-	user, ok := u.values[id]
+	_, ok := u.values[id]
 	if !ok {
-		return domain.User{}, errors.ErrRecordNotFound
+		return errors.ErrRecordNotFound
 	}
 
 	delete(u.values, id)
-	return user, nil
+	return nil
 }
