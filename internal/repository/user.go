@@ -25,6 +25,9 @@ func NewUser() *User {
 
 // InsertOne inserts a user.
 func (u *User) InsertOne(_ context.Context, user domain.User) error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
 	_, ok := u.values[user.ID]
 	if ok {
 		return errors.ErrDuplicateRecord
@@ -45,6 +48,9 @@ func (u *User) FindOne(_ context.Context, id uuid.UUID) (domain.User, error) {
 }
 
 func (u *User) DeleteOne(_ context.Context, id uuid.UUID) (domain.User, error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
 	user, ok := u.values[id]
 	if !ok {
 		return domain.User{}, errors.ErrRecordNotFound
