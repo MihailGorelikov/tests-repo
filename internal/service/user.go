@@ -13,7 +13,7 @@ type (
 	UserRepository interface {
 		InsertOne(ctx context.Context, user domain.User) error
 		FindOne(ctx context.Context, id uuid.UUID) (domain.User, error)
-		DeleteOne(ctx context.Context, id uuid.UUID) (domain.User, error)
+		DeleteOne(ctx context.Context, id uuid.UUID) error
 	}
 
 	// User is a service for user.
@@ -52,11 +52,11 @@ func (u *User) Get(ctx context.Context, id uuid.UUID) (domain.User, error) {
 }
 
 // Delete deletes a user.
-func (u *User) Delete(ctx context.Context, id uuid.UUID) (domain.User, error) {
-	user, err := u.repo.DeleteOne(ctx, id)
+func (u *User) Delete(ctx context.Context, id uuid.UUID) error {
+	err := u.repo.DeleteOne(ctx, id)
 	if err != nil {
-		return domain.User{}, fmt.Errorf("failed to delete user: %w", err)
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	return user, nil
+	return nil
 }
