@@ -9,7 +9,8 @@ import (
 func New(userService UserService, logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/v1/users", UsersHandler(logger, userService))
+	mux.HandleFunc("/api/v1/users", CreateUserHandler(logger, userService))
+	mux.HandleFunc("/api/v1/users/{id}", UsersHandler(logger, userService, "id"))
 
 	return mux
 }
