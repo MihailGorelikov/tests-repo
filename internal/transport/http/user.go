@@ -21,11 +21,6 @@ type UserService interface {
 
 func CreateUserHandler(logger *slog.Logger, svc UserService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		var req request.CreateUser
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			logger.
@@ -77,7 +72,7 @@ func CreateUserHandler(logger *slog.Logger, svc UserService) http.HandlerFunc {
 	}
 }
 
-func UsersHandler(logger *slog.Logger, svc UserService, idKey string) http.HandlerFunc {
+func GetUserHandler(logger *slog.Logger, svc UserService, idKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue(idKey)
 		if id == "" {
@@ -106,62 +101,87 @@ func UsersHandler(logger *slog.Logger, svc UserService, idKey string) http.Handl
 			return
 		}
 
-		switch r.Method {
-		case http.MethodGet:
-			user, err := svc.Get(r.Context(), userID)
-			if err != nil {
-				logger.
-					ErrorContext(
-						r.Context(),
-						"failed to get user",
-						slog.String("id", id),
-						slog.String("error", err.Error()),
-					)
+		user, err := svc.Get(r.Context(), userID)
+		if err != nil {
+			logger.
+				ErrorContext(
+					r.Context(),
+					"failed to get user",
+					slog.String("id", id),
+					slog.String("error", err.Error()),
+				)
 
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			response := response.User{
-				ID:    user.ID.String(),
-				Email: user.Email,
-			}
-
-			res, err := json.Marshal(response)
-			if err != nil {
-				logger.
-					ErrorContext(
-						r.Context(),
-						"failed to marshal response",
-						slog.String("error", err.Error()),
-					)
-
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write(res)
-
-		case http.MethodDelete:
-			err = svc.Delete(r.Context(), userID)
-			if err != nil {
-				logger.
-					ErrorContext(
-						r.Context(),
-						"failed to delete user",
-						slog.String("id", id),
-						slog.String("error", err.Error()),
-					)
-
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusOK)
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+
+		response := response.User{
+			ID:    user.ID.String(),
+			Email: user.Email,
+		}
+
+		res, err := json.Marshal(response)
+		if err != nil {
+			logger.
+				ErrorContext(
+					r.Context(),
+					"failed to marshal response",
+					slog.String("error", err.Error()),
+				)
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+	}
+}
+
+func DeleteUserHandler(logger *slog.Logger, svc UserService, idKey string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue(idKey)
+		if id == "" {
+			logger.
+				ErrorContext(
+					r.Context(),
+					"missing id param",
+					slog.String(idKey, id),
+				)
+
+			http.Error(w, "missing id param", http.StatusBadRequest)
+			return
+		}
+
+		userID, err := uuid.Parse(id)
+		if err != nil {
+			logger.
+				ErrorContext(
+					r.Context(),
+					"invalid id param",
+					slog.String("id", id),
+					slog.String("error", err.Error()),
+				)
+
+			http.Error(w, "invalid id param", http.StatusBadRequest)
+			return
+		}
+
+		err = svc.Delete(r.Context(), userID)
+		if err != nil {
+			logger.
+				ErrorContext(
+					r.Context(),
+					"failed to delete user",
+					slog.String("id", id),
+					slog.String("error", err.Error()),
+				)
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
